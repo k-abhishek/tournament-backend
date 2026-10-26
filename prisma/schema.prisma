@@ -10,9 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────────
-//  Enums
-// ─────────────────────────────────────────────
+// ── Enums ─────────────────────────────────────────────────────────────
 enum Role {
   PLAYER
   ORGANIZER
@@ -55,9 +53,7 @@ enum TeamRole {
   MEMBER
 }
 
-// ─────────────────────────────────────────────
-//  User  (synced from Clerk via webhook)
-// ─────────────────────────────────────────────
+// ── User (synced from Clerk via webhook) ──────────────────────────────
 model User {
   id          String   @id @default(uuid())   // internal DB id
   clerkId     String   @unique                // Clerk user_xxxxx
@@ -75,16 +71,15 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  organizedTournaments Tournament[]  @relation("OrganizerTournaments")
+  organizedTournaments Tournament[]          @relation("OrganizerTournaments")
+  moderatedTournaments TournamentModerator[]
   teamMemberships      TeamMember[]
   participants         Participant[]
   matchResults         MatchResult[]
   notifications        Notification[]
 }
 
-// ─────────────────────────────────────────────
-//  Game
-// ─────────────────────────────────────────────
+// ── Game ──────────────────────────────────────────────────────────────
 model Game {
   id          String       @id @default(uuid())
   name        String       @unique
@@ -99,9 +94,7 @@ model Game {
   tournaments Tournament[]
 }
 
-// ─────────────────────────────────────────────
-//  Tournament
-// ─────────────────────────────────────────────
+// ── Tournament ────────────────────────────────────────────────────────
 model Tournament {
   id            String           @id @default(uuid())
   name          String
@@ -127,14 +120,25 @@ model Tournament {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
+  moderators   TournamentModerator[]
   participants Participant[]
   matches      Match[]
   teams        Team[]
 }
 
-// ─────────────────────────────────────────────
-//  Team
-// ─────────────────────────────────────────────
+// ── Tournament Moderator ──────────────────────────────────────────────
+model TournamentModerator {
+  id           String     @id @default(uuid())
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  assignedAt   DateTime   @default(now())
+
+  @@unique([tournamentId, userId])
+}
+
+// ── Team ──────────────────────────────────────────────────────────────
 model Team {
   id           String       @id @default(uuid())
   name         String
@@ -162,9 +166,7 @@ model TeamMember {
   @@unique([teamId, userId])
 }
 
-// ─────────────────────────────────────────────
-//  Participant (player or team in a tournament)
-// ─────────────────────────────────────────────
+// ── Participant (player or team in a tournament) ──────────────────────
 model Participant {
   id           String            @id @default(uuid())
   tournament   Tournament        @relation(fields: [tournamentId], references: [id])
@@ -185,9 +187,7 @@ model Participant {
   @@unique([tournamentId, teamId])
 }
 
-// ─────────────────────────────────────────────
-//  Match
-// ─────────────────────────────────────────────
+// ── Match ─────────────────────────────────────────────────────────────
 model Match {
   id           String       @id @default(uuid())
   tournament   Tournament   @relation(fields: [tournamentId], references: [id])
@@ -221,9 +221,7 @@ model MatchResult {
   createdAt     DateTime    @default(now())
 }
 
-// ─────────────────────────────────────────────
-//  Notification
-// ─────────────────────────────────────────────
+// ── Notification ──────────────────────────────────────────────────────
 model Notification {
   id        String   @id @default(uuid())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -8,12 +8,14 @@ export default async function userRoutes(app) {
   // Public
   app.get('/:username/profile', ctrl.getPublicProfile.bind(ctrl));
 
-  // Protected — own profile
+  // Protected - own profile
   app.get('/me', { preHandler: [authenticate] }, ctrl.getMe.bind(ctrl));
   app.patch('/me', { preHandler: [authenticate] }, ctrl.updateMe.bind(ctrl));
   app.delete('/me', { preHandler: [authenticate] }, ctrl.deleteMe.bind(ctrl));
 
+  // Authenticated users can list/search users (used for selecting tournament moderators)
+  app.get('/', { preHandler: [authenticate] }, ctrl.list.bind(ctrl));
+
   // Admin only
-  app.get('/', { preHandler: [authenticate, authorize(['ADMIN'])] }, ctrl.list.bind(ctrl));
   app.patch('/:id/role', { preHandler: [authenticate, authorize(['ADMIN'])] }, ctrl.updateRole.bind(ctrl));
 }

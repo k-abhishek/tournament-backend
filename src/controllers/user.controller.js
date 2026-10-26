@@ -23,7 +23,7 @@ export class UserController {
       where: { id: req.user.id },
       select: {
         id: true, email: true, username: true, displayName: true,
-        avatarUrl: true, bio: true, role: true, isVerified: true, createdAt: true,
+        avatarUrl: true, bio: true, role: true, createdAt: true,
       },
     });
     return reply.send({ user });
@@ -45,15 +45,34 @@ export class UserController {
   }
 
   async list(req, reply) {
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const where = search
+      ? {
+          OR: [
+            { username: { contains: search, mode: 'insensitive' } },
+            { displayName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        }
+      : {};
+
     const [users, total] = await Promise.all([
       prisma.user.findMany({
+        where,
         skip: (Number(page) - 1) * Number(limit),
         take: Number(limit),
-        select: { id: true, email: true, username: true, role: true, isVerified: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          role: true,
+          createdAt: true,
+        },
+        orderBy: { username: 'asc' },
       }),
-      prisma.user.count(),
+      prisma.user.count({ where }),
     ]);
     return reply.send({ users, total });
   }
