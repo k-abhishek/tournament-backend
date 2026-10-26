@@ -40,10 +40,38 @@ app.addContentTypeParser(
 // ── Security & Infra Plugins ──────────────────────────────────────────
 await app.register(helmet, { contentSecurityPolicy: false });
 
+const configuredOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((url) => url.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://tournament-frontend-eta.vercel.app',
+];
+
+const allowedOrigins = new Set([...defaultAllowedOrigins, ...configuredOrigins]);
+
 await app.register(cors, {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, cb) => {
+    // Allow non-browser requests (no origin header, e.g. server-to-server or curl)
+    if (!origin) return cb(null, true);
+
+    const cleanOrigin = origin.replace(/\/$/, '');
+    try {
+      const hostname = new URL(origin).hostname;
+      if (allowedOrigins.has(cleanOrigin) || hostname.endsWith('.vercel.app')) {
+        return cb(null, true);
+      }
+      return cb(null, false);
+    } catch {
+      return cb(null, false);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 });
 
 await app.register(rateLimit, {
