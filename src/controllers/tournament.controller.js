@@ -89,21 +89,32 @@ export class TournamentController {
       include: {
         participant1: {
           include: {
-            user: { select: { username: true, avatarUrl: true } },
-            team: { select: { name: true, logoUrl: true } },
+            user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+            team: { select: { id: true, name: true, logoUrl: true } },
           },
         },
         participant2: {
           include: {
-            user: { select: { username: true, avatarUrl: true } },
-            team: { select: { name: true, logoUrl: true } },
+            user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+            team: { select: { id: true, name: true, logoUrl: true } },
           },
         },
+        results: true,
       },
       orderBy: [{ round: 'asc' }, { matchNumber: 'asc' }],
     });
 
-    return reply.send({ bracket: matches });
+    const mappedMatches = matches.map((m) => {
+      const res1 = m.results?.find((r) => r.participantId === m.p1Id);
+      const res2 = m.results?.find((r) => r.participantId === m.p2Id);
+      return {
+        ...m,
+        score1: res1 ? res1.score : null,
+        score2: res2 ? res2.score : null,
+      };
+    });
+
+    return reply.send({ bracket: mappedMatches });
   }
 
   async getParticipants(req, reply) {
@@ -134,6 +145,7 @@ export class TournamentController {
   async create(req, reply) {
     const {
       name,
+      organizerName,
       gameId,
       format,
       maxParticipants,
@@ -148,8 +160,15 @@ export class TournamentController {
       bannerUrl,
     } = req.body;
 
-    if (!name || !gameId || !format || !startDate) {
-      throw createError(400, 'name, gameId, format, and startDate are required');
+    if (!name || !organizerName || !gameId || !format || !startDate) {
+      throw createError(400, 'name, organizerName, gameId, format, and startDate are required');
+    }
+
+    if (organizerName && req.user?.id) {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { displayName: organizerName },
+      }).catch(() => {});
     }
 
     const slug = await generateSlug(name, (s) =>

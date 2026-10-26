@@ -10,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ── Enums ─────────────────────────────────────────────────────────────
+// ─── Enums ────────────────────────────────────────────────────────────────────
 enum Role {
   PLAYER
   ORGANIZER
@@ -53,7 +53,13 @@ enum TeamRole {
   MEMBER
 }
 
-// ── User (synced from Clerk via webhook) ──────────────────────────────
+enum TeamMemberStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+// ─── User (synced from Clerk via webhook) ─────────────────────────────────────
 model User {
   id          String   @id @default(uuid())   // internal DB id
   clerkId     String   @unique                // Clerk user_xxxxx
@@ -79,7 +85,7 @@ model User {
   notifications        Notification[]
 }
 
-// ── Game ──────────────────────────────────────────────────────────────
+// ─── Game ─────────────────────────────────────────────────────────────────────
 model Game {
   id          String       @id @default(uuid())
   name        String       @unique
@@ -94,7 +100,7 @@ model Game {
   tournaments Tournament[]
 }
 
-// ── Tournament ────────────────────────────────────────────────────────
+// ─── Tournament ───────────────────────────────────────────────────────────────
 model Tournament {
   id            String           @id @default(uuid())
   name          String
@@ -126,7 +132,7 @@ model Tournament {
   teams        Team[]
 }
 
-// ── Tournament Moderator ──────────────────────────────────────────────
+// ─── Tournament Moderator ─────────────────────────────────────────────────────
 model TournamentModerator {
   id           String     @id @default(uuid())
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
@@ -138,7 +144,7 @@ model TournamentModerator {
   @@unique([tournamentId, userId])
 }
 
-// ── Team ──────────────────────────────────────────────────────────────
+// ─── Team ─────────────────────────────────────────────────────────────────────
 model Team {
   id           String       @id @default(uuid())
   name         String
@@ -155,18 +161,19 @@ model Team {
 }
 
 model TeamMember {
-  id       String   @id @default(uuid())
-  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  id       String           @id @default(uuid())
+  team     Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId   String
-  user     User     @relation(fields: [userId], references: [id])
+  user     User             @relation(fields: [userId], references: [id])
   userId   String
-  role     TeamRole @default(MEMBER)
-  joinedAt DateTime @default(now())
+  role     TeamRole         @default(MEMBER)
+  status   TeamMemberStatus @default(PENDING)
+  joinedAt DateTime         @default(now())
 
   @@unique([teamId, userId])
 }
 
-// ── Participant (player or team in a tournament) ──────────────────────
+// ─── Participant (player or team in a tournament) ─────────────────────────────
 model Participant {
   id           String            @id @default(uuid())
   tournament   Tournament        @relation(fields: [tournamentId], references: [id])
@@ -187,7 +194,7 @@ model Participant {
   @@unique([tournamentId, teamId])
 }
 
-// ── Match ─────────────────────────────────────────────────────────────
+// ─── Match ────────────────────────────────────────────────────────────────────
 model Match {
   id           String       @id @default(uuid())
   tournament   Tournament   @relation(fields: [tournamentId], references: [id])
@@ -221,7 +228,7 @@ model MatchResult {
   createdAt     DateTime    @default(now())
 }
 
-// ── Notification ──────────────────────────────────────────────────────
+// ─── Notification ─────────────────────────────────────────────────────────────
 model Notification {
   id        String   @id @default(uuid())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

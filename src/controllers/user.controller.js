@@ -1,4 +1,4 @@
-import { prisma } from '../config/database.js';
+﻿import { prisma } from '../config/database.js';
 import { createError } from '../utils/errors.js';
 
 export class UserController {
@@ -9,7 +9,7 @@ export class UserController {
         id: true, username: true, displayName: true, avatarUrl: true, bio: true,
         role: true, createdAt: true,
         organizedTournaments: {
-          select: { id: true, name: true, slug: true, status: true },
+          select: { id: true, name: true, slug: true, status: true, teamSize: true },
           take: 5, orderBy: { createdAt: 'desc' },
         },
       },
@@ -86,4 +86,53 @@ export class UserController {
     });
     return reply.send({ user });
   }
+
+  // My team memberships (all tournaments)
+  async getMyTeams(req, reply) {
+    const memberships = await prisma.teamMember.findMany({
+      where: { userId: req.user.id },
+      include: {
+        team: {
+          include: {
+            tournament: { select: { id: true, name: true, slug: true, status: true, teamSize: true } },
+            members: {
+              include: {
+                user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+              },
+              orderBy: { joinedAt: 'asc' },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+    });
+    return reply.send({ memberships });
+  }
+
+  // Pending team invitations for current user
+  async getMyInvites(req, reply) {
+    const invites = await prisma.teamMember.findMany({
+      where: {
+        userId: req.user.id,
+        status: 'PENDING',
+        role: 'MEMBER',
+      },
+      include: {
+        team: {
+          include: {
+            tournament: { select: { id: true, name: true, slug: true, status: true, teamSize: true } },
+            members: {
+              where: { role: 'CAPTAIN' },
+              include: {
+                user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+    });
+    return reply.send({ invites });
+  }
+
 }
