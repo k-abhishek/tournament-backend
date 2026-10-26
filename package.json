@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon --watch src --ext js src/server.js",
     "start": "node src/server.js",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
     "worker": "node src/worker/index.js",
     "dev:worker": "nodemon --watch src --ext js src/worker/index.js",
     "db:generate": "prisma generate",
