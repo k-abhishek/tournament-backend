@@ -43,5 +43,5 @@ notificationWorker.on('failed', (job, err) => console.error(`[notifWorker] job $
 if (!isRedisDisabled) {
   console.log('⚙️  BullMQ workers started');
 } else {
-  console.log('⚠️  Redis and BullMQ workers are disabled for local development');
+  console.log('⚠️  Redis and BullMQ workers are disabled');
 }

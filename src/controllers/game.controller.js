@@ -1,13 +1,10 @@
 import { prisma } from '../config/database.js';
 import { createError } from '../utils/errors.js';
 import { generateSlug } from '../utils/slug.js';
-import { redisClient } from '../config/redis.js';
-
 export class GameController {
   async list(req, reply) {
     const games = await prisma.game.findMany({ orderBy: { name: 'asc' } });
-    const keys = await redisClient.keys('*');
-    return reply.send({ games, keys });
+    return reply.send({ games });
   }
 
   async getBySlug(req, reply) {
